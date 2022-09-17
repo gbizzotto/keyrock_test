@@ -5,6 +5,11 @@ use rtrb;
 
 use super::book as book;
 
+pub fn parse_size_into_satoshis(s : &str) ->i64 {
+    let v: Vec<&str> = s.trim_matches('"').split('.').collect();
+    v[0].parse::<i64>().unwrap() * 100000000i64 + v[1].parse::<i64>().unwrap()
+}
+
 pub fn kraken(producer: &mut rtrb::Producer<book::OrderUpdate>) {
     let (mut socket, _response) = connect(Url::parse("wss://ws.kraken.com").unwrap()).expect("Can't connect");
     println!("rcvd: {}", socket.read_message().expect("Error reading message"));
@@ -31,7 +36,7 @@ pub fn kraken(producer: &mut rtrb::Producer<book::OrderUpdate>) {
     loop {
         let snapshot_message = socket.read_message().expect("Error reading message");
         let json_snapshot: serde_json::Value = serde_json::from_str(snapshot_message.to_text().unwrap()).expect("snapshot should be proper JSON");
-        //println!("snapshot: {}", json_snapshot);
+        println!("snapshot: {}", json_snapshot);
         if json_snapshot.get("event") == None {
             let bids = json_snapshot[1]["bs"].as_array().unwrap();
             let asks = json_snapshot[1]["as"].as_array().unwrap();
@@ -40,7 +45,7 @@ pub fn kraken(producer: &mut rtrb::Producer<book::OrderUpdate>) {
                 let bid = bids[i].as_array().unwrap();
                 let order = book::Order {
                     price: bid[0].to_string().replace("\"", "").parse::<f64>().unwrap(),
-                    size : bid[1].to_string().replace("\"", "").parse::<f64>().unwrap() * 100000000.0, // size in satoshis
+                    size : parse_size_into_satoshis(&bid[1].to_string()),
                 };
                 let idx = book::book_lower_bound(&kraken_book.bids, order.price);
                 kraken_book.bids.insert(idx, book::Order{price: order.price, size: order.size});
@@ -55,7 +60,7 @@ pub fn kraken(producer: &mut rtrb::Producer<book::OrderUpdate>) {
                 let ask = asks[i].as_array().unwrap();
                 let order = book::Order {
                     price: ask[0].to_string().replace("\"", "").parse::<f64>().unwrap(),
-                    size : ask[1].to_string().replace("\"", "").parse::<f64>().unwrap() * 100000000.0, // size in satoshis
+                    size : parse_size_into_satoshis(&ask[1].to_string()),
                 };
                 let idx = book::book_lower_bound(&kraken_book.asks, order.price);
                 kraken_book.asks.insert(idx, book::Order{price: order.price, size: order.size});
@@ -83,7 +88,7 @@ pub fn kraken(producer: &mut rtrb::Producer<book::OrderUpdate>) {
                 let bid = bids[i].as_array().unwrap();
                 let order = book::Order {
                     price: bid[0].to_string().replace("\"", "").parse::<f64>().unwrap(),
-                    size : bid[1].to_string().replace("\"", "").parse::<f64>().unwrap(),
+                    size : parse_size_into_satoshis(&bid[1].to_string()),
                 };
                 let idx = book::book_lower_bound(&kraken_book.bids, order.price);
                 if idx >= kraken_book.bids.len() || kraken_book.bids[idx].price != order.price {
@@ -103,7 +108,7 @@ pub fn kraken(producer: &mut rtrb::Producer<book::OrderUpdate>) {
                         size_difference: order.size,
                     };
                     producer.push(order_update).expect("Error pushing order to queue");
-                } else if order.size == 0.0 {
+                } else if order.size == 0 {
                     // delete
                     let order_update = book::OrderUpdate {
                         is_sell        : false,
@@ -130,7 +135,7 @@ pub fn kraken(producer: &mut rtrb::Producer<book::OrderUpdate>) {
                 let ask = asks[i].as_array().unwrap();
                 let order = book::Order {
                     price: ask[0].to_string().replace("\"", "").parse::<f64>().unwrap(),
-                    size : ask[1].to_string().replace("\"", "").parse::<f64>().unwrap(),
+                    size : parse_size_into_satoshis(&ask[1].to_string()),
                 };
                 let idx = book::book_lower_bound(&kraken_book.asks, order.price);
                 if idx >= kraken_book.asks.len() || kraken_book.asks[idx].price != order.price {
@@ -150,7 +155,7 @@ pub fn kraken(producer: &mut rtrb::Producer<book::OrderUpdate>) {
                         size_difference: order.size,
                     };
                     producer.push(order_update).expect("Error pushing order to queue");
-                } else if order.size == 0.0 {
+                } else if order.size == 0 {
                     // delete
                     let order_update = book::OrderUpdate {
                         is_sell        : true,

@@ -129,3 +129,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn kraken_parse_size() {
+    assert_eq!(kraken::parse_size_into_satoshis( r#""0.00000000""#),   00000000i64);
+    assert_eq!(kraken::parse_size_into_satoshis( r#""0.10000000""#),   10000000i64);
+    assert_eq!(kraken::parse_size_into_satoshis( r#""1.00000000""#),  100000000i64);
+    assert_eq!(kraken::parse_size_into_satoshis( r#""9.90000000""#),  990000000i64);
+    assert_eq!(kraken::parse_size_into_satoshis(r#""10.00000001""#), 1000000001i64);
+}

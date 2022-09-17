@@ -6,7 +6,7 @@ message BookRequest {
 
 message Order {
     double price = 1;
-    double size = 2;
+    int64 size = 2;
 }
 
 message BookResponse {

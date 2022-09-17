@@ -11,7 +11,7 @@ use super::book as book;
 pub struct BitmexOrder {
     pub id: String,
     pub price: f64,
-    pub size:  f64,
+    pub size:  i64,
 }
 impl fmt::Display for BitmexOrder {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -88,13 +88,13 @@ pub fn bitmex(producer: &mut rtrb::Producer<book::OrderUpdate>) {
     {
         let snapshot_message = socket.read_message().expect("Error reading message");
         let json_snapshot: serde_json::Value = serde_json::from_str(snapshot_message.to_text().unwrap()).expect("snapshot should be proper JSON");
-        //println!("snapshot: {}", json_snapshot);
+        println!("snapshot: {}", json_snapshot);
         let snapshot_data = json_snapshot.get("data").expect("snapshot should have data").as_array().unwrap();
         for i in 0..snapshot_data.len() {
             //println!("bitmex snapshot order: {}", snapshot_data[i]);
-            let order = BitmexOrder{id   : snapshot_data[i].get("id"   ).expect("order should have id   ").as_i64().unwrap().to_string()
+            let order = BitmexOrder{id   : snapshot_data[i].get("id"   ).expect("order should have id"   ).as_i64().unwrap().to_string()
                                    ,price: snapshot_data[i].get("price").expect("order should have price").as_f64().unwrap()
-                                   ,size : snapshot_data[i].get("size" ).expect("order should have size ").as_f64().unwrap() / 1000000.0 // lot size for BTCUSD on bitmex is 100 satoshis https://www.bitmex.com/app/contract/XBTUSD
+                                   ,size : snapshot_data[i].get("size" ).expect("order should have size" ).as_i64().unwrap() * 100 // lot size for BTCUSD on bitmex is 100 satoshis https://www.bitmex.com/app/contract/XBTUSD
                                    };
             let is_sell = snapshot_data[i].get("side").expect("order should have side").as_str().unwrap() == "Sell";
             if is_sell {
@@ -137,8 +137,8 @@ pub fn bitmex(producer: &mut rtrb::Producer<book::OrderUpdate>) {
             let id = data[i].get("id").expect("order should have id").as_i64().unwrap().to_string();
             let is_sell = data[i].get("side").expect("order should have side").as_str().unwrap() == "Sell";
             let mut price = match data[i].get("price"){Some(v)=>v.as_f64().unwrap(),None=>0.0};
-            let size  = match data[i].get("size" ){Some(v)=>v.as_f64().unwrap(),None=>0.0} / 1000000.0; // lot size for BTCUSD on bitmex is 100 satoshis https://www.bitmex.com/app/contract/XBTUSD
-            let mut size_difference : f64 = 0.0;
+            let size  = match data[i].get("size" ){Some(v)=>v.as_i64().unwrap(),None=>0} * 100; // lot size for BTCUSD on bitmex is 100 satoshis https://www.bitmex.com/app/contract/XBTUSD
+            let mut size_difference : i64 = 0;
             if action == 0 {
                 //println!("insert");
                 let order = BitmexOrder{id   : data[i].get("id").expect("order should have id").as_i64().unwrap().to_string()

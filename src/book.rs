@@ -5,12 +5,12 @@ use std::fmt;
 #[derive(Debug, Default)]
 pub struct Order {
     pub price: f64,
-    pub size:  f64,
+    pub size:  i64,
 }
 pub struct OrderUpdate  {
     pub is_sell: bool,
     pub price: f64,
-    pub size_difference:f64,
+    pub size_difference:i64,
 }
 impl fmt::Display for Order {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -70,7 +70,7 @@ impl Book {
                 self.asks.insert(idx, Order{price: order_update.price, size: order_update.size_difference});
             } else {
                 self.asks[idx].size += order_update.size_difference;
-                if self.asks[idx].size == 0.0 {
+                if self.asks[idx].size == 0 {
                     self.asks.remove(idx);
                 }
             }
@@ -80,7 +80,7 @@ impl Book {
                 self.bids.insert(idx, Order{price: order_update.price, size: order_update.size_difference});
             } else {
                 self.bids[idx].size += order_update.size_difference;
-                if self.bids[idx].size == 0.0 {
+                if self.bids[idx].size == 0 {
                     self.bids.remove(idx);
                 }
             }
