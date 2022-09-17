@@ -1,0 +1,21 @@
+syntax = "proto3";
+package bookreq;
+
+message BookRequest {
+}
+
+message Order {
+    double price = 1;
+    double size = 2;
+}
+
+message BookResponse {
+    double spread = 1;
+    repeated Order bids = 2;
+    repeated Order asks = 3;
+}
+
+service Booker {
+    rpc Get     (BookRequest) returns (       BookResponse);
+    rpc Getting (BookRequest) returns (stream BookResponse);
+}
